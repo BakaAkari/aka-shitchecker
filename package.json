@@ -1,0 +1,36 @@
+{
+  "name": "koishi-plugin-aka-shitchecker",
+  "description": "对群成员进行随机数鉴定并执行禁言",
+  "version": "0.0.1",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin"
+  ],
+  "koishi": {
+    "description": {
+      "en": "aka-shitchecker",
+      "zh": "随机数鉴定与禁言"
+    },
+    "category": "tool",
+    "locales": [
+      "zh",
+      "en"
+    ]
+  },
+  "peerDependencies": {
+    "koishi": "^4.18.9"
+  }
+}
+
