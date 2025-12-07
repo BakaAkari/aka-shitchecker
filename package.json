@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-aka-shitchecker",
   "description": "对群成员进行随机数鉴定并执行禁言",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [

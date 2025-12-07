@@ -27,10 +27,10 @@ function isAdmin(userId: string, adminUsers: string[]): boolean {
 }
 
 /**
- * 将小时转换为秒
+ * 将小时转换为毫秒
  */
-function hoursToSeconds(hours: number): number {
-  return hours * 60 * 60
+function hoursToMilliseconds(hours: number): number {
+  return hours * 60 * 60 * 1000
 }
 
 /**
@@ -80,8 +80,26 @@ export function apply(ctx: Context, config: Config) {
 
       // 如果没有找到 @ 用户，尝试从引用消息中获取
       if (!targetUserId && session.quote) {
-        targetUserId = session.quote.user.id
-        targetUserName = session.quote.user.name || targetUserId
+        // 1. 尝试直接从 session.quote 获取
+        if (session.quote.user && session.quote.user.id) {
+          targetUserId = session.quote.user.id
+          targetUserName = session.quote.user.name || targetUserId
+        }
+        
+        // 2. 如果直接获取失败（某些适配器可能不返回引用消息的发送者信息），尝试通过 API 获取
+        // 注意：不是所有适配器都支持 getMessage
+        if (!targetUserId && session.quote.id) {
+          try {
+             logger.debug('尝试通过 API 获取引用消息详情', session.quote.id)
+             const quoteMsg = await session.bot.getMessage(session.channelId, session.quote.id)
+             if (quoteMsg && quoteMsg.user && quoteMsg.user.id) {
+                targetUserId = quoteMsg.user.id
+                targetUserName = quoteMsg.user.name || targetUserId
+             }
+          } catch (error) {
+             logger.warn('获取引用消息详情失败', error)
+          }
+        }
       }
 
       // 如果还是没有找到，返回错误
@@ -128,19 +146,19 @@ export function apply(ctx: Context, config: Config) {
         // 根据次级检定结果确定禁言时长
         if (durationRoll === 1) {
           // 大失败：72小时
-          muteDuration = hoursToSeconds(72)
+          muteDuration = hoursToMilliseconds(72)
           resultMessage += `💀 大失败！禁言时长：72小时`
         } else if (durationRoll >= 2 && durationRoll <= 5) {
           // 1小时
-          muteDuration = hoursToSeconds(1)
+          muteDuration = hoursToMilliseconds(1)
           resultMessage += `⏰ 禁言时长：1小时`
         } else if (durationRoll >= 6 && durationRoll <= 15) {
           // 12小时
-          muteDuration = hoursToSeconds(12)
+          muteDuration = hoursToMilliseconds(12)
           resultMessage += `⏰ 禁言时长：12小时`
         } else if (durationRoll >= 16 && durationRoll <= 19) {
           // 24小时
-          muteDuration = hoursToSeconds(24)
+          muteDuration = hoursToMilliseconds(24)
           resultMessage += `⏰ 禁言时长：24小时`
         } else if (durationRoll === 20) {
           // 大成功：豁免禁言
@@ -164,7 +182,7 @@ export function apply(ctx: Context, config: Config) {
               await (session.bot as any).$setGroupBan(
                 session.guildId,
                 targetUserId,
-                muteDuration
+                muteDuration / 1000
               )
             } 
             // 如果都不存在，尝试使用内部 API
@@ -172,14 +190,14 @@ export function apply(ctx: Context, config: Config) {
               await (session.bot as any).internal.setGroupBan(
                 session.guildId,
                 targetUserId,
-                muteDuration
+                muteDuration / 1000
               )
             }
             else {
               throw new Error('当前适配器不支持禁言功能')
             }
             
-            const durationHours = muteDuration / 3600
+            const durationHours = muteDuration / 3600000
             resultMessage += `\n✅ 已对 ${targetUserName} 执行禁言（${formatDuration(durationHours)}）`
             
             logger.info('禁言执行成功', {
