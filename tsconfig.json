@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": false,
+    "noUncheckedIndexedAccess": false,
+    "incremental": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@satorijs/element",
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}
