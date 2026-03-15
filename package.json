@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-aka-shitchecker",
   "description": "对群成员进行随机数鉴定并执行禁言",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -28,6 +28,10 @@
       "zh",
       "en"
     ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   },
   "peerDependencies": {
     "koishi": "^4.18.9"

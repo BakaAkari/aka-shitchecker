@@ -14,6 +14,7 @@ export const Config: Schema<Config> = Schema.object({
 
 /**
  * 生成 1-20 的随机数（d20）
+ * 点数越小，禁言时间越长
  */
 function rollD20(): number {
   return Math.floor(Math.random() * 20) + 1
@@ -35,8 +36,13 @@ function hoursToMilliseconds(hours: number): number {
 
 /**
  * 格式化时长显示
+ * @param ms 毫秒数
  */
-function formatDuration(hours: number): string {
+function formatDuration(ms: number): string {
+  const minutes = Math.floor(ms / 60000)
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  
   if (hours >= 24) {
     const days = Math.floor(hours / 24)
     const remainingHours = hours % 24
@@ -45,7 +51,13 @@ function formatDuration(hours: number): string {
     }
     return `${days}天${remainingHours}小时`
   }
-  return `${hours}小时`
+  if (hours > 0 && remainingMinutes > 0) {
+    return `${hours}小时${remainingMinutes}分钟`
+  }
+  if (hours > 0) {
+    return `${hours}小时`
+  }
+  return `${remainingMinutes}分钟`
 }
 
 export function apply(ctx: Context, config: Config) {
@@ -143,23 +155,35 @@ export function apply(ctx: Context, config: Config) {
         let muteDuration: number | null = null
         let resultMessage = `🎲 基础豁免检定结果：${baseRoll}\n❌ ${targetUserName} 豁免失败，进入禁言时长判定\n🎲 禁言时长判定结果：${durationRoll}\n`
 
-        // 根据次级检定结果确定禁言时长
+        // 根据次级检定结果确定禁言时长（点数越小，禁言越长）
         if (durationRoll === 1) {
-          // 大失败：72小时
-          muteDuration = hoursToMilliseconds(72)
-          resultMessage += `💀 大失败！禁言时长：72小时`
-        } else if (durationRoll >= 2 && durationRoll <= 5) {
-          // 1小时
-          muteDuration = hoursToMilliseconds(1)
-          resultMessage += `⏰ 禁言时长：1小时`
-        } else if (durationRoll >= 6 && durationRoll <= 15) {
+          // 大失败：24小时
+          muteDuration = hoursToMilliseconds(24)
+          resultMessage += `💀 大失败！禁言时长：24小时`
+        } else if (durationRoll >= 2 && durationRoll <= 3) {
           // 12小时
           muteDuration = hoursToMilliseconds(12)
           resultMessage += `⏰ 禁言时长：12小时`
-        } else if (durationRoll >= 16 && durationRoll <= 19) {
-          // 24小时
-          muteDuration = hoursToMilliseconds(24)
-          resultMessage += `⏰ 禁言时长：24小时`
+        } else if (durationRoll >= 4 && durationRoll <= 6) {
+          // 6小时
+          muteDuration = hoursToMilliseconds(6)
+          resultMessage += `⏰ 禁言时长：6小时`
+        } else if (durationRoll >= 7 && durationRoll <= 10) {
+          // 2小时
+          muteDuration = hoursToMilliseconds(2)
+          resultMessage += `⏰ 禁言时长：2小时`
+        } else if (durationRoll >= 11 && durationRoll <= 14) {
+          // 30分钟
+          muteDuration = 30 * 60 * 1000
+          resultMessage += `⏰ 禁言时长：30分钟`
+        } else if (durationRoll >= 15 && durationRoll <= 18) {
+          // 10分钟
+          muteDuration = 10 * 60 * 1000
+          resultMessage += `⏰ 禁言时长：10分钟`
+        } else if (durationRoll === 19) {
+          // 5分钟
+          muteDuration = 5 * 60 * 1000
+          resultMessage += `⏰ 禁言时长：5分钟`
         } else if (durationRoll === 20) {
           // 大成功：豁免禁言
           resultMessage += `🎉 大成功！${targetUserName} 豁免禁言`
@@ -197,14 +221,13 @@ export function apply(ctx: Context, config: Config) {
               throw new Error('当前适配器不支持禁言功能')
             }
             
-            const durationHours = muteDuration / 3600000
-            resultMessage += `\n✅ 已对 ${targetUserName} 执行禁言（${formatDuration(durationHours)}）`
+            resultMessage += `\n✅ 已对 ${targetUserName} 执行禁言（${formatDuration(muteDuration)}）`
             
             logger.info('禁言执行成功', {
               operator: session.userId,
               target: targetUserId,
               duration: muteDuration,
-              durationHours
+              durationHours: muteDuration / 3600000
             })
           } catch (error: any) {
             logger.error('禁言执行失败', error)
